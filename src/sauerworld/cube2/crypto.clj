@@ -47,8 +47,7 @@
       (.getCurve)
       (.getFieldSize)
       (/ 8)
-      (rand/hex)
-      to-biginteger))
+      (rand/hex)))
 
 
 ;;; Cryptsystem setup
@@ -148,10 +147,11 @@
   "Generates message, challenge and answer, given a pubkey, curve and optional
    message. If no message is passed, generates a random one."
   ([pubkey curve message]
-     (let [challenge (-> (.getG curve)
-                         (.multiply message)
-                         (.normalize))
-           pubkey-point (plot-point (to-biginteger pubkey) curve)]
+   (let [message (to-biginteger message)
+         challenge (-> (.getG curve)
+                       (.multiply message)
+                       (.normalize))
+         pubkey-point (plot-point (to-biginteger pubkey) curve)]
        {:message message
         :challenge challenge
         :answer (-> pubkey-point
