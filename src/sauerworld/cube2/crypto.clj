@@ -1,14 +1,10 @@
 (ns sauerworld.cube2.crypto
   (:require [crypto.random :as rand])
-  (:import java.security.KeyFactory ;; check
-           java.security.Security ;; check
-           org.bouncycastle.jce.ECNamedCurveTable ;; check
-           org.bouncycastle.jce.spec.ECPrivateKeySpec ;; check
-           org.bouncycastle.jce.spec.ECPublicKeySpec ;; check
+  (:import (java.security KeyFactory Security)
+           org.bouncycastle.jce.ECNamedCurveTable
+           (org.bouncycastle.jce.spec ECParameterSpec ECPrivateKeySpec ECPublicKeySpec)
            org.bouncycastle.crypto.generators.ECKeyPairGenerator
-           org.bouncycastle.math.ec.ECFieldElement$Fp
-           org.bouncycastle.math.ec.ECPoint
-           org.bouncycastle.math.ec.ECPoint$Fp
+           (org.bouncycastle.math.ec ECFieldElement$Fp ECPoint ECPoint$Fp)
            org.bouncycastle.jce.provider.BouncyCastleProvider))
 
 ;;; Utility
@@ -16,11 +12,11 @@
 (defprotocol IBigInteger
 
   "Coercion to java.math.BigInteger. For hex strings it is sign-aware."
-  (to-biginteger [x] "Coerce to BigInteger"))
+  (^BigInteger to-biginteger [x] "Coerce to BigInteger"))
 
 (extend-protocol IBigInteger
   String
-  (to-biginteger [s]
+  (to-biginteger [^String s]
     (let [sign (first s)]
       (if (contains? #{\- \+} sign)
         (let [negative? (= \- sign)]
@@ -42,7 +38,7 @@
 
 (defn random-message
   "Generates a random message whose size matches the Curve's field size."
-  [curve]
+  [^ECParameterSpec curve]
   (-> curve
       (.getCurve)
       (.getFieldSize)
@@ -65,7 +61,7 @@
 ;; "real" ecc
 (defn- new-private-keyspec
   "Convenience wrapper over ECPrivateKeySpec."
-  [key-secret curve]
+  [key-secret ^ECParameterSpec curve]
   (let [key-secret (to-biginteger key-secret)]
     (ECPrivateKeySpec. key-secret curve)))
 
@@ -85,7 +81,7 @@
 
 (defn priv->pub
   "Converts a private key to a public key."
-  [privkey curve]
+  ^ECPublicKeySpec [privkey ^ECParameterSpec curve]
   (-> (.getG curve)
       (.multiply (to-biginteger privkey))
       (ECPublicKeySpec. curve)))
@@ -126,7 +122,7 @@
 
    * It is extremely non-standard in ECC to do this operation, but cube2 auth
      relies on it extensively."
-  [x curve-param]
+  ^ECPoint [x ^ECParameterSpec curve-param]
   (let [x (to-biginteger x)
         curve (.getCurve curve-param)
         b (.getB curve)
@@ -146,7 +142,7 @@
 (defn- generate-challenge
   "Generates message, challenge and answer, given a pubkey, curve and optional
    message. If no message is passed, generates a random one."
-  ([pubkey curve message]
+  ([pubkey ^ECParameterSpec curve message]
    (let [message (to-biginteger message)
          challenge (-> (.getG curve)
                        (.multiply message)
